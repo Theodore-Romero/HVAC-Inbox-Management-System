@@ -1,57 +1,66 @@
 # HVAC Inbox Intelligence Agent
 
-An automated inbox triage and dispatch system for HVAC companies built with **n8n**, **Gmail**, **Slack**, and **OpenAI**.
+An automated email-triage and dispatch system for HVAC companies that detects web form requests, service emergencies, and operational emails—instantly notifying the right team via Slack.
 
-This workflow ensures that **no lead, service request, emergency, or operational email is missed**, while routing each message to the correct team in real time.
+**n8n · Gmail · Slack · OpenAI**
 
 ---
 
-## 🔔 What This Does
+## 🔔 Live Notifications
 
-The HVAC Inbox Intelligence Agent:
+Slack alerts are sent in real time to:
 
-- Monitors a shared HVAC inbox continuously
+- `#new-leads`
+- `#dispatch`
+- `#dispatch-emergency`
+- `#inbox-review`
+
+> Slack channels and routing rules are fully configurable per company.
+
+---
+
+## 📊 Overview
+
+This project answers the operational question:
+
+**“How do HVAC companies ensure no lead, service request, or emergency email is ever missed?”**
+
+The system automatically:
+
+- Monitors the HVAC company inbox in real time
 - Cleans and normalizes inbound email content
-- Detects website and CRM form submissions
-- Classifies emails into HVAC-specific categories
-- Detects emergencies with hard safety overrides
-- Extracts structured customer and job data
-- Sends formatted Slack notifications
-- Applies Gmail labels for auditability
-- Forwards emails to dispatch or billing when needed
-- Falls back safely to human review when uncertain
+- Detects web form submissions using deterministic rules
+- Classifies incoming emails into HVAC-specific operational categories
+- Extracts structured customer and job details using AI
+- Sends actionable Slack notifications to dispatch and sales teams
+- Routes emails to the correct inbox, label, or department
+- Applies safeguards for failures, ambiguity, and duplicate processing
 
 ---
 
-## 🧠 Categories Handled
+## 🔍 Key Capabilities
 
-Exactly one category is assigned per email:
-
-1. Emergency
-2. Service Request / Repair
-3. New Lead / Estimate Request
-4. Maintenance / Membership
-5. Scheduling / Dispatch Updates
-6. Billing / Invoice
-7. Vendor / Partner
-8. Hiring / HR
-9. Spam / Marketing
-10. Needs Review (fallback)
+- 🚨 **Emergency detection** (gas smell, CO, smoke, electrical risk)
+- 🧾 **Form submission recognition** (website, CRM, and intake tools)
+- 📞 **Lead & service request parsing** into structured JSON
+- 📬 **Smart inbox routing** (billing, scheduling, maintenance, HR, vendors)
+- 🏷️ **Consistent Gmail labeling** for auditability
+- ⚠️ **“Needs Review” safety bucket** for low-confidence messages
 
 ---
 
-## 🧰 Tech Stack
+## 🛠️ Tech Stack
 
-| Function | Technology |
-|--------|------------|
+| Component | Technology |
+|---------|------------|
 | Workflow Automation | n8n |
 | Email Ingestion | Gmail API |
-| Classification Logic | JavaScript (deterministic) |
-| Data Extraction | OpenAI (LangChain Agent) |
+| Classification | JavaScript (rule-based HVAC classifier) |
+| Data Extraction | OpenAI (LangChain agent) |
 | Notifications | Slack API |
 | Logging / Dedupe | Gmail Labels |
 
 ---
 
-## 🧩 High-Level Architecture
+## 📐 Architecture
 
