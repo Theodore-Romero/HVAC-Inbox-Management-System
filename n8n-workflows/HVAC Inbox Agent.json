@@ -1,0 +1,1468 @@
+{
+  "name": "HVAC Inbox Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1056,
+        128
+      ],
+      "id": "78f98e5f-434d-4fc1-ae65-aaba618bad17",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.cleanedBody }}",
+        "options": {
+          "systemMessage": "You extract structured data from HVAC inbound emails (especially website form submissions).\nReturn ONLY valid JSON with these keys:\n{\n  \"source\": \"web_form|email|unknown\",\n  \"intent\": \"estimate_request|service_request|maintenance|billing|scheduling|vendor|hr|other\",\n  \"urgency\": \"emergency|same_day|standard\",\n  \"customer\": {\"name\": \"\", \"phone\": \"\", \"email\": \"\"},\n  \"location\": {\"address\": \"\", \"city\": \"\", \"postal_code\": \"\", \"notes\": \"\"},\n  \"equipment\": {\"type\": \"ac|furnace|heat_pump|boiler|thermostat|unknown\", \"notes\": \"\"},\n  \"preferred_times\": [\"\", \"\"],\n  \"problem_summary\": \"\",\n  \"raw_signals\": {\"formSignalReason\": \"\", \"emergencyKeywordHit\": \"\"}\n}\nRules:\n- If it looks like a website/CRM submission, set source to web_form.\n- If gas smell / carbon monoxide / smoke / sparking => urgency emergency.\n- Keep strings short; if unknown, use empty string.\n- Never include markdown or explanations."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -176,
+        -288
+      ],
+      "id": "10f5a0e9-c9b3-4c67-811b-28af53069315",
+      "name": "Agent - Extract HVAC Request"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0A6PNJG37D",
+          "mode": "list",
+          "cachedResultName": "testing"
+        },
+        "text": "=*HVAC Intake* ({{$json.urgency}})\nIntent: *{{$json.intent}}*\nCustomer: {{$json.customer.name}} ({{$json.customer.phone}} / {{$json.customer.email}})\nAddress: {{$json.location.address}} {{$json.location.city}} {{$json.location.postal_code}}\nEquipment: {{$json.equipment.type}}\nProblem: {{$json.problem_summary}}\nPreferred: {{$json.preferred_times[0]}}, {{$json.preferred_times[1]}}\n",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        -384
+      ],
+      "id": "40ad74f0-2e19-4f41-91c6-169c5640b528",
+      "name": "Slack - Notify Dispatch/Leads",
+      "webhookId": "3a304150-ce7b-44eb-8755-85227a124589",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "55IOfrNv7oe9YfAL",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "=",
+        "labelIds": [
+          "HVAC/Form",
+          "={{$json.extracted.urgency === 'emergency' ? 'HVAC/Emergency' : 'HVAC/New'}}",
+          "HVAC/Processed"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        624,
+        -400
+      ],
+      "id": "07214be2-81de-4f57-a829-ae4bbad4dc2e",
+      "name": "Gmail - Apply Labels",
+      "webhookId": "91d94f2a-8331-4ec8-888c-35be96d063eb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "forward"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        848,
+        -336
+      ],
+      "id": "537f30c0-9f72-461d-8dd4-fa399958f337",
+      "name": "Gmail - Forward to Dispatch",
+      "webhookId": "9fec7390-009a-4a53-ae40-5cb5b6d878f8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0A6PNJG37D",
+          "mode": "list",
+          "cachedResultName": "testing"
+        },
+        "text": "=EMERGENCY REPORT\n{{ $json.from }} has reported an emergency via email\nIssue:\n{{ $json.cleanedBody }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        -192
+      ],
+      "id": "08e4c67e-5e6a-4f8d-aa79-90876ed99a59",
+      "name": "Slack - Emergency (Classifier)",
+      "webhookId": "4a3595ba-4b37-46cc-b5ff-93700b04bd98",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "55IOfrNv7oe9YfAL",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{$json.messageId}}",
+        "labelIds": [
+          "HVAC/Emergency",
+          "HVAC/Processed"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        768,
+        -176
+      ],
+      "id": "50a56816-5dfb-40ab-b03c-e050fc67dd0b",
+      "name": "Gmail - Label Emergency",
+      "webhookId": "edc8e2e7-0b6d-4156-be2f-f43e96402bb9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0A6PNJG37D",
+          "mode": "list",
+          "cachedResultName": "testing"
+        },
+        "text": "={{ \n\"🆕 *HVAC Lead / Estimate*\\n\" +\n\"From: \" + $json.from + \"\\n\" +\n\"Subject: \" + $json.subject + \"\\n\\n\" +\n\"Body:\\n\" + ($json.cleanedBody || \"\")\n}}\n",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        128
+      ],
+      "id": "33608753-61d0-4883-88c5-3a5f88a1ec4e",
+      "name": "Slack - New Lead (Classifier)",
+      "webhookId": "9829bfaa-4859-4d17-856c-e82899120685",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "55IOfrNv7oe9YfAL",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{$json.messageId}}",
+        "labelIds": [
+          "HVAC/Lead",
+          "HVAC/Processed"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        768,
+        112
+      ],
+      "id": "707ceb4c-19ec-44c0-913f-f1163de6a5b9",
+      "name": "Gmail - Label Lead",
+      "webhookId": "72624b05-fbf9-4719-bf45-011441ea0a42",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0A6PNJG37D",
+          "mode": "list",
+          "cachedResultName": "testing"
+        },
+        "text": "=A service request has been submitted via email\nClient: {{ $json.from }}\nDate: {{ $json.date }}\nBody: {{ $json.cleanedBody }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        -32
+      ],
+      "id": "51c6535d-8833-48c9-ae73-d35bc0f92da8",
+      "name": "Slack - Service Request (Classifier)",
+      "webhookId": "2a46ec6b-ebba-44cf-9644-40be8c13a2dc",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "55IOfrNv7oe9YfAL",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{$json.messageId}}",
+        "labelIds": [
+          "HVAC/Service",
+          "HVAC/Processed"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        768,
+        -32
+      ],
+      "id": "c7e63433-ba0e-446f-abba-d0aabdf83dc3",
+      "name": "Gmail - Label Service",
+      "webhookId": "75befb41-6e03-45be-8ec1-54a586e8cee5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0A6PNJG37D",
+          "mode": "list",
+          "cachedResultName": "testing"
+        },
+        "text": "={{`📆 *Scheduling / Dispatch Update*\\nFrom: ${$json.from}\\nSubject: ${$json.subject}\\nBody: ${( $json.bodyText || '' ).slice(0,600)}\\nThread: ${$json.threadId}`}}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        432
+      ],
+      "id": "dab516c2-2ce9-4873-b36e-c146fe2c24ba",
+      "name": "Slack - Scheduling Update",
+      "webhookId": "0e746d6b-bf07-40df-abe9-9d95ce9910ba",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "55IOfrNv7oe9YfAL",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{$json.messageId}}",
+        "labelIds": [
+          "HVAC/Scheduling",
+          "HVAC/Processed"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        752,
+        432
+      ],
+      "id": "0e6c46fa-e83d-41c4-8169-bc4a1617e3db",
+      "name": "Gmail - Label Scheduling",
+      "webhookId": "5e5d7a5f-e34a-4961-bb65-c1ee8013fd89",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{$json.messageId}}",
+        "labelIds": [
+          "HVAC/Billing",
+          "HVAC/Processed"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        752,
+        576
+      ],
+      "id": "d5c61e02-d19d-4d34-be97-62f3036e2e49",
+      "name": "Gmail - Label Billing",
+      "webhookId": "161792f9-5822-445d-a8ba-37cfd72b1714",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "forward"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        464,
+        624
+      ],
+      "id": "8a5a3ad5-b4cc-4651-b8e8-d16058a0526a",
+      "name": "Gmail - Forward Billing",
+      "webhookId": "b003eb10-ff5f-47a6-92ae-de61f4595c6a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{$json.messageId}}",
+        "labelIds": [
+          "HVAC/Maintenance",
+          "HVAC/Processed"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        768,
+        272
+      ],
+      "id": "b7134cee-1020-4bbd-bbcd-8a5d122cb481",
+      "name": "Gmail - Label Maintenance",
+      "webhookId": "c7eaf964-a008-44db-bd77-82d4d233358e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0A6PNJG37D",
+          "mode": "list",
+          "cachedResultName": "testing"
+        },
+        "text": "={{`🔧 *Maintenance / Membership*\\nFrom: ${$json.from}\\nSubject: ${$json.subject}\\nThread: ${$json.threadId}`}}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        288
+      ],
+      "id": "c2e9dd21-d92a-4261-a9f0-d7a3121287a8",
+      "name": "Slack - Maintenance",
+      "webhookId": "13d27a8b-35d2-40cb-98dd-84a0755626b9",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "55IOfrNv7oe9YfAL",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{$json.messageId}}",
+        "labelIds": [
+          "HVAC/Vendor",
+          "HVAC/Processed"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        752,
+        720
+      ],
+      "id": "5fb077e2-8e12-4952-81c5-47337d4e2022",
+      "name": "Gmail - Label Vendor",
+      "webhookId": "c54634fa-220e-486a-9145-b845011e8ca6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0A6PNJG37D",
+          "mode": "list",
+          "cachedResultName": "testing"
+        },
+        "text": "={{`🤝 *Vendor / Partner*\\nFrom: ${$json.from}\\nSubject: ${$json.subject}`}}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        768
+      ],
+      "id": "8d8c522b-257e-4434-9196-63f17df19da6",
+      "name": "Slack - Vendor",
+      "webhookId": "9e4307a1-e57d-4a00-ac60-b3129916aa5c",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "55IOfrNv7oe9YfAL",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{$json.messageId}}",
+        "labelIds": [
+          "HVAC/HR",
+          "HVAC/Processed"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        752,
+        864
+      ],
+      "id": "55a6df40-43d3-4826-a5b6-13a579340aeb",
+      "name": "Gmail - Label HR",
+      "webhookId": "ba469761-a0ec-416a-980b-133201426c5a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0A6PNJG37D",
+          "mode": "list",
+          "cachedResultName": "testing"
+        },
+        "text": "={{`👤 *Hiring / HR*\\nFrom: ${$json.from}\\nSubject: ${$json.subject}`}}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        928
+      ],
+      "id": "a483f7c7-fb31-4b88-a65a-15605c8514c6",
+      "name": "Slack - HR",
+      "webhookId": "b51bbd20-4877-4db5-84ea-c588782046d0",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "55IOfrNv7oe9YfAL",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{$json.messageId}}",
+        "labelIds": [
+          "HVAC/Spam",
+          "HVAC/Processed"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        752,
+        1024
+      ],
+      "id": "66eaab78-518f-44ab-a313-474afc350b9f",
+      "name": "Gmail - Label Spam",
+      "webhookId": "6561ccc2-abd8-4c8d-a378-2f171be5de1f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{$json.messageId}}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        1088
+      ],
+      "id": "bba8e23d-9b58-4ba9-8bf3-bdeaf6d73d3e",
+      "name": "Gmail - Mark Read (Spam)",
+      "webhookId": "114dcd95-cc51-4a43-908b-f5c89488a086",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0A6PNJG37D",
+          "mode": "list",
+          "cachedResultName": "testing"
+        },
+        "text": "={{`❓ *Needs Review*\\nFrom: ${$json.from}\\nSubject: ${$json.subject}\\nBody: ${( $json.bodyText || '' ).slice(0,600)}\\nThread: ${$json.threadId}`}}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        1280
+      ],
+      "id": "8cfde139-c54e-4d1b-a8f5-a03d722ea6a8",
+      "name": "Slack - Needs Review",
+      "webhookId": "6c941cde-13d0-4c73-ae19-da6c9a67ac59",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "55IOfrNv7oe9YfAL",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{$json.messageId}}",
+        "labelIds": [
+          "HVAC/Review",
+          "HVAC/Processed"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        752,
+        1184
+      ],
+      "id": "df562cbd-638e-453c-9792-8601e26acfb7",
+      "name": "Gmail - Label Review",
+      "webhookId": "46922854-88fb-4d1e-a550-92d5bb02c5fb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VrJn5ffOJdhjt8eY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1152,
+        240
+      ],
+      "id": "09c11ab6-ea95-4887-862d-01c63bf6aa79",
+      "name": "Log Stub (replace with DB/DataStore)"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "text"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        0
+      ],
+      "id": "3ede4150-baa1-40eb-8636-1d13454c4ed6",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "9xb6WOuW61nMxgft",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * n8n Code node (JavaScript)\n * Classifies an email into EXACTLY ONE HVAC triage category.\n *\n * Inputs it may use (it will try multiple):\n * - subject, from, text, body, cleanedBody, input, inputText, snippet\n *\n * Outputs:\n * - category (string)                 -> winner category\n * - confidence (0..1)\n * - reasons (string[])\n * - matchedScores (object)            -> counts per category (debug)\n * - matchedBinary (object)            -> 0/1 per category (thresholded)\n * - matchedExclusive (object)         -> exactly one category = 1, rest 0 (routing-friendly)\n * - matched (object)                  -> alias of matchedExclusive for backwards compatibility\n */\n\nfunction s(v) { return (v ?? \"\").toString(); }\n\nfunction extractEmailAddress(fromField) {\n  const str = s(fromField);\n  const m =\n    str.match(/<([^>]+@[^>]+)>/) ||\n    str.match(/([A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,})/i);\n  return m ? m[1] : \"\";\n}\n\nfunction domainFromEmail(email) {\n  const at = email.lastIndexOf(\"@\");\n  return at === -1 ? \"\" : email.slice(at + 1).toLowerCase();\n}\n\nfunction scoreMatches(text, patterns) {\n  let score = 0;\n  const hits = [];\n  for (const p of patterns) {\n    const rx = typeof p === \"string\" ? new RegExp(p, \"i\") : p;\n    if (rx.test(text)) {\n      score += 1;\n      hits.push(rx.toString());\n    }\n  }\n  return { score, hits };\n}\n\nreturn items.map((item) => {\n  const subject = s(item.json.subject || item.json.headers?.subject || \"\");\n  const fromRaw = s(item.json.from || item.json.sender || item.json.headers?.from || \"\");\n  const fromEmail = extractEmailAddress(fromRaw);\n  const fromDomain = domainFromEmail(fromEmail);\n\n  // Prefer cleaned/prepared text if you have it\n  const body =\n    s(item.json.input) ||\n    s(item.json.inputText) ||\n    s(item.json.cleanedBody) ||\n    s(item.json.bodyText) ||\n    s(item.json.text) ||\n    s(item.json.textPlain) ||\n    s(item.json.body) ||\n    s(item.json.snippet) ||\n    \"\";\n\n  const text = `${subject}\\n${body}\\nFrom: ${fromRaw}`.toLowerCase();\n\n  // --- Category pattern sets (tune these for your business) ---\n  const patterns = {\n    \"Emergency\": [\n      /gas smell|smell gas|natural gas|propane/i,\n      /carbon monoxide|co alarm|co detector/i,\n      /smoke|burning smell|sparking|electrical fire/i,\n      /flood|burst pipe|major leak|water pouring/i,\n      /\\bemergency\\b|\\burgent\\b|\\basap\\b/i,\n    ],\n    \"Service Request / Repair\": [\n      /no heat|not heating|heat not working/i,\n      /no cool|not cooling|ac not working|a\\/c not working/i,\n      /broken|stopped working|won't turn on|doesn't start/i,\n      /thermostat|furnace|air handler|compressor|condenser/i,\n      /strange noise|loud noise|rattling|squealing|humming/i,\n      /leak|dripping|water under|frozen coil|ice on/i,\n      /error code|fault code/i,\n      /repair|service call|technician/i,\n    ],\n    \"New Lead / Estimate Request\": [\n      /estimate|quote|pricing|how much|cost/i,\n      /new system|replacement|replace unit|install|installation|new ac|new furnace/i,\n      /financing|monthly payment/i,\n      /second opinion/i,\n      /consultation|proposal/i,\n      /new customer|first time/i,\n      /new form submission|contact us|request an estimate/i,\n    ],\n    \"Maintenance / Membership\": [\n      /maintenance|tune-?up|seasonal/i,\n      /membership|service plan|maintenance plan|agreement/i,\n      /annual|bi-annual|spring|fall/i,\n      /filter change|filters/i,\n      /preventative/i,\n    ],\n    \"Scheduling / Dispatch Updates\": [\n      /resched|reschedule|change appointment|move appointment/i,\n      /availability|what time|schedule me|book me|set up appointment/i,\n      /running late|on my way|eta|arrive|arrival window/i,\n      /gate code|lock box|access code|parking|call when/i,\n      /confirm(ation)?/i,\n      /\\bdispatch\\b/i,\n    ],\n    \"Billing / Invoice\": [\n      /invoice|bill|billing/i,\n      /payment|paid|paying|charge|charged|refund/i,\n      /receipt|balance|past due|overdue/i,\n      /credit card|card on file|financ/i,\n      /collections/i,\n    ],\n    \"Vendor / Partner\": [\n      /vendor|supply house|wholesale|distributor/i,\n      /partner(ship)?|reseller|dealer program/i,\n      /purchase order|\\bpo\\b/i,\n      /net\\s?\\d{2}/i,\n      /accounts payable|accounts receivable/i,\n      /terms and conditions|credit application/i,\n    ],\n    \"Hiring / HR\": [\n      /resume|cv|cover letter/i,\n      /job|position|career|apply|application/i,\n      /interview|recruiter/i,\n      /hiring|hr/i,\n    ],\n    \"Spam / Marketing\": [\n      /unsubscribe|newsletter|webinar|promo|promotion/i,\n      /seo services|increase your leads|rank on google/i,\n      /cold email|partnership opportunity/i,\n      /bitcoin|crypto/i,\n      /buy now|limited time|special offer/i,\n    ],\n    \"Needs Review\": [\n      // fallback only\n    ],\n  };\n\n  // --- Provider / sender domain hints (optional) ---\n  const vendorDomains = [\"trane.com\", \"carrier.com\", \"lennox.com\", \"daikin.com\", \"johnstone\", \"ferguson\", \"grainger\"];\n  const marketingDomains = [\"mailchimp.com\", \"constantcontact.com\", \"hubspot.com\", \"sendgrid.net\"];\n\n  const reasons = [];\n  const rawScores = {};\n\n  // Score keyword hits per category\n  for (const [cat, pats] of Object.entries(patterns)) {\n    const { score } = scoreMatches(text, pats);\n    rawScores[cat] = score;\n    if (score > 0) reasons.push(`${cat}: matched ${score} pattern(s)`);\n  }\n\n  // Domain adjustments\n  if (vendorDomains.some(d => fromDomain.includes(d))) {\n    rawScores[\"Vendor / Partner\"] = (rawScores[\"Vendor / Partner\"] || 0) + 2;\n    reasons.push(\"Vendor domain hint\");\n  }\n  if (marketingDomains.some(d => fromDomain.includes(d))) {\n    rawScores[\"Spam / Marketing\"] = (rawScores[\"Spam / Marketing\"] || 0) + 2;\n    reasons.push(\"Marketing platform domain hint\");\n  }\n\n  // Decide winner\n  let bestCat = \"Needs Review\";\n  let bestScore = 0;\n  let confidence = 0.35;\n\n  // Emergency override (strong signal)\n  if ((rawScores[\"Emergency\"] || 0) >= 2) {\n    bestCat = \"Emergency\";\n    bestScore = rawScores[\"Emergency\"] || 0;\n    confidence = 0.95;\n    reasons.push(\"Emergency override (multiple emergency indicators)\");\n  } else {\n    // Highest score excluding Needs Review unless all zero\n    const categories = Object.keys(patterns).filter(c => c !== \"Needs Review\");\n    for (const cat of categories) {\n      const sc = rawScores[cat] || 0;\n      if (sc > bestScore) {\n        bestScore = sc;\n        bestCat = cat;\n      }\n    }\n\n    if (bestScore === 0) {\n      bestCat = \"Needs Review\";\n      confidence = 0.35;\n      reasons.push(\"No strong keyword matches; defaulting to Needs Review\");\n    } else if (bestScore >= 4) {\n      confidence = 0.9;\n    } else if (bestScore === 3) {\n      confidence = 0.8;\n    } else if (bestScore === 2) {\n      confidence = 0.7;\n    } else {\n      confidence = 0.55; // bestScore=1\n    }\n  }\n\n  // Build binary + exclusive flags\n  const matchedBinary = {};\n  const matchedExclusive = {};\n  const threshold = 1; // >=1 => 1; raise to 2 to be stricter\n\n  for (const cat of Object.keys(patterns)) {\n    const sc = rawScores[cat] || 0;\n    matchedBinary[cat] = sc >= threshold ? 1 : 0;\n    matchedExclusive[cat] = 0;\n  }\n  if (bestCat in matchedExclusive) matchedExclusive[bestCat] = 1;\n\n  // Outputs\n  item.json.category = bestCat;\n  item.json.confidence = confidence;\n  item.json.reasons = reasons;\n\n  item.json.matchedScores = rawScores;            // debug: counts like 3, 1, 0...\n  item.json.matchedBinary = matchedBinary;        // 0/1 possibly multiple 1s\n  item.json.matchedExclusive = matchedExclusive;  // exactly one 1 for routing\n\n  // Backwards compatibility: \"matched\" becomes binary-exclusive\n  item.json.matched = matchedExclusive;\n\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        208
+      ],
+      "id": "4e6b8b21-28d0-4ac5-b24d-e56169012269",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.matched.Emergency }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "33e547a1-ca2e-487a-b794-9b1dc572f86d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Emergency"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "44ea46af-ebea-454c-8b53-6fdf2cc73c99",
+                    "leftValue": "={{ $json.matched[\"Service Request / Repair\"] }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Service Request"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d95c9297-a841-4828-9136-a71a8220a7f6",
+                    "leftValue": "={{ $json.matched[\"New Lead / Estimate Request\"] }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Estimate Request"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "ef21ecd7-d738-47a8-90ec-d27e5f82d1aa",
+                    "leftValue": "={{ $json.matched[\"Maintenance / Membership\"] }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Maintenance"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "485673f9-7022-42e2-a00a-46b3b51f0432",
+                    "leftValue": "={{ $json.matched[\"Scheduling / Dispatch Updates\"] }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Scheduling"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "849d31d8-5cf9-4ae8-a487-92853a6442b6",
+                    "leftValue": "={{ $json.matched[\"Billing / Invoice\"] }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Billing"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "76bfcb20-7c15-46fa-b998-65c6aa24d06d",
+                    "leftValue": "={{ $json.matched[\"Vendor / Partner\"] }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Vendor"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "1ac5424b-c490-40a2-b457-3a5c99a9d7ca",
+                    "leftValue": "={{ $json.matched[\"Hiring / HR\"] }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Hiring/HR"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e5c0c0c9-d204-480c-baa8-f3a2c2acc0d5",
+                    "leftValue": "={{ $json.matched[\"Spam / Marketing\"] }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Spam"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e78e1f34-9244-463e-bbd8-396470efa0e3",
+                    "leftValue": "={{ $json.matched[\"Needs Review\"] }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Needs Review"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        16,
+        192
+      ],
+      "id": "2b1b741b-f335-48d9-acb2-51ac1bb1c914",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "function toStr(v) {\n  if (v === null || v === undefined) return \"\";\n  return String(v);\n}\n\nfunction stripHtml(html) {\n  let t = toStr(html);\n  t = t.replace(/<script[\\s\\S]*?<\\/script>/gi, \"\");\n  t = t.replace(/<style[\\s\\S]*?<\\/style>/gi, \"\");\n  t = t.replace(/<\\/(p|div|li|tr|h\\d)>/gi, \"\\n\");\n  t = t.replace(/<(br|hr)\\s*\\/?>/gi, \"\\n\");\n  t = t.replace(/<[^>]+>/g, \"\");\n  t = t\n    .replace(/&nbsp;/g, \" \")\n    .replace(/&amp;/g, \"&\")\n    .replace(/&lt;/g, \"<\")\n    .replace(/&gt;/g, \">\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\");\n  return t;\n}\n\nfunction normalizeWhitespace(text) {\n  let t = toStr(text);\n  t = t.replace(/\\r\\n/g, \"\\n\").replace(/\\r/g, \"\\n\");\n  t = t.split(\"\\n\").map(l => l.replace(/[ \\t]+$/g, \"\")).join(\"\\n\");\n  t = t.replace(/\\n{3,}/g, \"\\n\\n\");\n  return t.trim();\n}\n\nfunction removeQuotedReplies(text) {\n  const lines = toStr(text).split(\"\\n\");\n  let cutIndex = lines.length;\n\n  const markerRegexes = [\n    /^on\\s.+wrote:\\s*$/i,\n    /^-----original message-----$/i,\n    /^--\\s*forwarded message\\s*--$/i,\n  ];\n\n  for (let i = 0; i < lines.length; i++) {\n    const line = lines[i].trim();\n    if (markerRegexes.some(rx => rx.test(line))) {\n      cutIndex = i;\n      break;\n    }\n  }\n\n  // cut at long quote (\">\") run\n  let quoteRun = 0;\n  for (let i = 0; i < lines.length; i++) {\n    if (/^\\s*>/.test(lines[i])) quoteRun++;\n    else quoteRun = 0;\n    if (quoteRun >= 5) {\n      cutIndex = Math.min(cutIndex, i - quoteRun + 1);\n      break;\n    }\n  }\n\n  return lines.slice(0, cutIndex).join(\"\\n\").trim();\n}\n\nfunction removeSignature(text) {\n  const lines = toStr(text).split(\"\\n\");\n  let cutIndex = lines.length;\n\n  for (let i = 0; i < lines.length; i++) {\n    const l = lines[i].trim();\n    if (l === \"--\" || l === \"-- \") { cutIndex = i; break; }\n    if (/^sent from my/i.test(l)) { cutIndex = i; break; }\n  }\n\n  return lines.slice(0, cutIndex).join(\"\\n\").trim();\n}\n\nfunction extractEmailAddress(fromField) {\n  const s = toStr(fromField);\n  const m = s.match(/<([^>]+@[^>]+)>/) || s.match(/([A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,})/i);\n  return m ? m[1] : \"\";\n}\n\nfunction domainFromEmail(email) {\n  const at = email.lastIndexOf(\"@\");\n  return at === -1 ? \"\" : email.slice(at + 1).toLowerCase();\n}\n\nfunction normalizeSubject(subject) {\n  let s = toStr(subject).trim();\n  while (/^(re|fw|fwd)\\s*:\\s*/i.test(s)) {\n    s = s.replace(/^(re|fw|fwd)\\s*:\\s*/i, \"\").trim();\n  }\n  return s;\n}\n\nfunction truncate(text, maxChars = 4000) {\n  const t = toStr(text);\n  if (t.length <= maxChars) return { text: t, truncated: false };\n  return { text: t.slice(0, maxChars) + \"\\n\\n[...truncated...]\", truncated: true };\n}\n\nreturn items.map((item) => {\n  // Map common email node fields (adjust if yours differs)\n  const rawFrom =\n    item.json.from ||\n    item.json.sender ||\n    item.json.fromEmail ||\n    item.json.headers?.from ||\n    \"\";\n\n  const rawTo =\n    item.json.to ||\n    item.json.recipient ||\n    item.json.toEmail ||\n    item.json.headers?.to ||\n    \"\";\n\n  const rawSubject =\n    item.json.subject ||\n    item.json.headers?.subject ||\n    \"\";\n\n  const rawDate =\n    item.json.date ||\n    item.json.headers?.date ||\n    item.json.internalDate ||\n    \"\";\n\n  const textPlain =\n    item.json.text ||\n    item.json.textPlain ||\n    item.json.body ||\n    item.json.snippet ||\n    \"\";\n\n  const html =\n    item.json.html ||\n    item.json.bodyHtml ||\n    item.json.body?.content ||\n    \"\";\n\n  const baseText = normalizeWhitespace(textPlain || stripHtml(html));\n  const noQuotes = removeQuotedReplies(baseText);\n  const noSig = removeSignature(noQuotes);\n  const cleanedBody = normalizeWhitespace(noSig);\n\n  const fromEmail = extractEmailAddress(rawFrom);\n  const fromDomain = domainFromEmail(fromEmail);\n  const subjectNormalized = normalizeSubject(rawSubject);\n\n  const preparedInput = normalizeWhitespace(\n    `From: ${toStr(rawFrom).trim()}\nTo: ${toStr(rawTo).trim()}\nDate: ${toStr(rawDate).trim()}\nSubject: ${toStr(rawSubject).trim()}\n\nBody:\n${cleanedBody}`\n  );\n\n  const { text: input, truncated } = truncate(preparedInput, 4000);\n\n  // ✅ Overwrite the JSON so output is \"parsed down\"\n  item.json = {\n    input,                 // best field to feed into evaluation/AI\n    cleanedBody,           // body only\n    from: toStr(rawFrom).trim(),\n    fromEmail,\n    fromDomain,\n    to: toStr(rawTo).trim(),\n    subject: toStr(rawSubject).trim(),\n    subjectNormalized,\n    date: toStr(rawDate).trim(),\n    truncated,\n    bodyCharCount: cleanedBody.length,\n  };\n\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        128
+      ],
+      "id": "c9df5a44-a2cb-4bab-b2eb-710d9e8ff57d",
+      "name": "Clean Email"
+    },
+    {
+      "parameters": {
+        "jsCode": "function norm(s) {\n  return (s || \"\").toString().toLowerCase();\n}\n\nconst FORM_SENDER_DOMAINS = [\n  \"typeform.com\",\"google.com\",\"jotform.com\",\"formstack.com\",\"wufoo.com\",\n  \"airtable.com\",\"mailchimp.com\",\"hubspot.com\",\"zapier.com\",\n  // add your own form senders/domains here:\n  \"yourhvacsite.com\",\n];\n\nconst SUBJECT_PATTERNS = [\n  /new (form )?submission/i,\n  /you've got a new submission/i,\n  /response(s)? received/i,\n  /new entry/i,\n  /new lead/i,\n  /form response/i,\n  /submitted:/i,\n  /service request submission/i,          // ✅ add this\n  /new service request/i,                 // ✅ add this\n];\n\nconst BODY_PATTERNS = [\n  /submitted on/i,\n  /submission id/i,\n  /form name/i,\n  /questions?\\s*and\\s*answers?/i,\n  /field\\s*name/i,\n  /service request/i,                     // ✅ add this\n];\n\nfunction keyValueLineScore(text) {\n  const lines = (text || \"\").split(/\\r?\\n/).map(l => l.trim()).filter(Boolean);\n  if (lines.length === 0) return 0;\n\n  let kv = 0;\n  for (const l of lines) {\n    if (/^.{1,40}\\s*[:\\-]\\s+.{1,200}$/.test(l)) kv++;\n  }\n  const ratio = kv / Math.min(lines.length, 30);\n  return Math.max(0, Math.min(1, ratio));\n}\n\nreturn items.map((item) => {\n  const from = norm(item.json.from || item.json.sender || item.json.fromEmail || item.json.headers?.from || \"\");\n  const subject = item.json.subject || item.json.headers?.subject || \"\";\n\n  // ✅ expanded field coverage\n  const text =\n    item.json.input ||\n    item.json.inputText ||\n    item.json.cleanedBody ||\n    item.json.bodyText ||\n    item.json.text ||\n    item.json.textPlain ||\n    item.json.body ||\n    item.json.snippet ||\n    \"\";\n\n  const html = item.json.html || item.json.bodyHtml || \"\";\n  const combinedBody = `${text}\\n${html}`.slice(0, 20000);\n\n  const reasons = [];\n  let score = 0;\n\n  if (FORM_SENDER_DOMAINS.some(d => from.includes(d))) {\n    score += 0.45;\n    reasons.push(\"Sender domain matches known form provider/internal forms domain\");\n  }\n\n  if (SUBJECT_PATTERNS.some(rx => rx.test(subject))) {\n    score += 0.35;\n    reasons.push(\"Subject matches submission phrasing\");\n  }\n\n  if (BODY_PATTERNS.some(rx => rx.test(combinedBody))) {\n    score += 0.2;\n    reasons.push(\"Body contains submission keywords\");\n  }\n\n  const kvScore = keyValueLineScore(text || combinedBody);\n  if (kvScore >= 0.35) {\n    score += 0.35 * kvScore;\n    reasons.push(`Body looks like structured form fields (kvScore=${kvScore.toFixed(2)})`);\n  }\n\n  // Optional heuristic for internal forms sender\n  if (from.includes(\"forms@\")) {\n    score += 0.2;\n    reasons.push(\"Sender contains forms@\");\n  }\n\n  const confidence = Math.max(0, Math.min(1, score));\n  const isFormSubmission = confidence >= 0.6;\n\n  item.json.isFormSubmission = isFormSubmission;\n  item.json.formConfidence = Number(confidence.toFixed(2));\n  item.json.formReasons = reasons;\n\n  // ✅ debugging so you can see what it evaluated\n  item.json.formDebug = {\n    from,\n    subject,\n    usedTextFieldPreview: (text || \"\").slice(0, 200),\n    kvScore: Number(kvScore.toFixed(2)),\n    score: Number(confidence.toFixed(2)),\n  };\n\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        128
+      ],
+      "id": "4af032dd-b8cb-4fb5-a767-e8d44bfdd136",
+      "name": "Form Determination"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "31e033f3-a636-4787-a6b0-e8879320a378",
+              "leftValue": "={{ $json.isFormSubmission }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -448,
+        128
+      ],
+      "id": "78aacb3d-1b1c-45d2-9dad-93a307882aae",
+      "name": "If Form Submission"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const raw = item.json.output;\n\n  if (typeof raw !== \"string\") {\n    // If it's already parsed or not present, just pass through\n    return item;\n  }\n\n  let text = raw.trim();\n\n  // Strip code fences if they ever appear\n  text = text.replace(/^```(?:json)?\\s*/i, \"\").replace(/```$/i, \"\").trim();\n\n  try {\n    const obj = JSON.parse(text);\n\n    // Option A: replace item.json entirely with the parsed object\n    item.json = obj;\n\n    // Option B (if you prefer to keep original too), comment the above and use:\n    // item.json.parsed = obj;\n\n  } catch (e) {\n    throw new Error(`Failed to parse output JSON. Raw:\\n${raw}`);\n  }\n\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -304
+      ],
+      "id": "f5f212f0-eb0b-4fe5-b36c-d85e6028683f",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Clean Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Notify Dispatch/Leads": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Apply Labels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Apply Labels": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Forward to Dispatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Forward to Dispatch": {
+      "main": [
+        [
+          {
+            "node": "Log Stub (replace with DB/DataStore)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Emergency (Classifier)": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Label Emergency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Label Emergency": {
+      "main": [
+        [
+          {
+            "node": "Log Stub (replace with DB/DataStore)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - New Lead (Classifier)": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Label Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Label Lead": {
+      "main": [
+        [
+          {
+            "node": "Log Stub (replace with DB/DataStore)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Service Request (Classifier)": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Label Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Label Service": {
+      "main": [
+        [
+          {
+            "node": "Log Stub (replace with DB/DataStore)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Scheduling Update": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Label Scheduling",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Label Scheduling": {
+      "main": [
+        [
+          {
+            "node": "Log Stub (replace with DB/DataStore)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Forward Billing": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Label Billing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Label Billing": {
+      "main": [
+        [
+          {
+            "node": "Log Stub (replace with DB/DataStore)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Maintenance": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Label Maintenance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Label Maintenance": {
+      "main": [
+        [
+          {
+            "node": "Log Stub (replace with DB/DataStore)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Vendor": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Label Vendor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Label Vendor": {
+      "main": [
+        [
+          {
+            "node": "Log Stub (replace with DB/DataStore)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - HR": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Label HR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Label HR": {
+      "main": [
+        [
+          {
+            "node": "Log Stub (replace with DB/DataStore)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Mark Read (Spam)": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Label Spam",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Label Spam": {
+      "main": [
+        [
+          {
+            "node": "Log Stub (replace with DB/DataStore)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Needs Review": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Label Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Label Review": {
+      "main": [
+        [
+          {
+            "node": "Log Stub (replace with DB/DataStore)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent - Extract HVAC Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent - Extract HVAC Request",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Slack - Emergency (Classifier)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Service Request (Classifier)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - New Lead (Classifier)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Maintenance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Scheduling Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail - Forward Billing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Vendor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - HR",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail - Mark Read (Spam)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Email": {
+      "main": [
+        [
+          {
+            "node": "Form Determination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Form Determination": {
+      "main": [
+        [
+          {
+            "node": "If Form Submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Form Submission": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent - Extract HVAC Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Slack - Notify Dispatch/Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "63574323-4ee8-473a-8afc-d377970bf451",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1ae5362bd806bc4074679f8acb85824d76526eabb92a896f10ca95b977f1158f"
+  },
+  "id": "M8x3hAa8aVeZUssA",
+  "tags": []
+}
