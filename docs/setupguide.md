@@ -39,9 +39,6 @@ HVAC/Spam
 
 HVAC/Review
 
-yaml
-Copy code
-
 Ensure the inbox receives all inbound emails and does not auto-archive messages.
 
 ---
