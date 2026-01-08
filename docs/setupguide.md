@@ -18,15 +18,25 @@ This guide explains how to deploy the HVAC Inbox Intelligence Agent using **n8n*
 Create the following Gmail labels:
 
 HVAC/Processed
+
 HVAC/Emergency
+
 HVAC/Lead
+
 HVAC/Service
+
 HVAC/Scheduling
+
 HVAC/Billing
+
 HVAC/Maintenance
+
 HVAC/Vendor
+
 HVAC/HR
+
 HVAC/Spam
+
 HVAC/Review
 
 yaml
