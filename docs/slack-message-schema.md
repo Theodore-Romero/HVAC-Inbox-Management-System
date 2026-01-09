@@ -1,10 +1,10 @@
 # Slack Message Schema — HVAC Inbox Intelligence Agent
 
-This document defines the Slack message formats and channel routing used by the HVAC Inbox Intelligence Agent.
+This document defines the Slack message formats and routing used by the **HVAC Inbox Intelligence Agent**.
 
-Messages are designed to be **consistent**, **scannable**, and **actionable** for dispatch, sales, and operations teams.
+Slack messages are designed to be **consistent**, **scannable**, and **actionable** for dispatch, sales, and operations teams.
 
-> **Important:** Billing and Spam/Marketing emails are handled via **email forwarding only** and do **not** generate Slack messages.
+> **Note:** Billing and Spam/Marketing emails are handled via **email forwarding only** and do not generate Slack messages.
 
 ---
 
@@ -18,10 +18,10 @@ All Slack messages follow a consistent structure:
 
 ### Design Rules
 - One Slack message per email
-- Messages are optimized for fast scanning
+- Messages are optimized for fast scanning (mobile-friendly)
 - Emergency messages always send (no confidence gating)
-- Ambiguous or low-confidence messages route to **Needs Review**
-- Gmail remains the source of truth
+- Ambiguous or low-confidence emails route to **Needs Review**
+- Gmail remains the system of record
 
 ---
 
@@ -37,9 +37,10 @@ From: <from>
 Details: <truncated email body>
 
 
+
 **Notes**
 - Always delivered to `#dispatch-emergency`
-- Includes as much body context as possible (truncated if needed)
+- Includes as much message context as possible (truncated if needed)
 
 ---
 
@@ -55,11 +56,12 @@ From: <from>
 Summary: <short body snippet>
 
 
+
 ---
 
 ## 🔧 Service Request / Repair → `#service-request`
 
-Used for standard service or repair requests.
+Used for standard HVAC service or repair requests.
 
 **Format**
 🔧 Service Request (urgency)
@@ -68,6 +70,8 @@ From: <from>
 
 Summary: <short body snippet>
 
+
+---
 
 ## 📆 Scheduling / Dispatch Update → `#service-request`
 
@@ -81,6 +85,8 @@ Thread: <thread_id>
 
 Summary: <short body snippet>
 
+
+
 ---
 
 ## 🛠️ Maintenance / Membership → `#maintenance-request`
@@ -92,6 +98,8 @@ Used for maintenance plans and membership-related requests.
 Subject: <subject>
 From: <from>
 Thread: <thread_id>
+
+
 
 ---
 
@@ -106,11 +114,12 @@ From: <from>
 
 Summary: <short body snippet>
 
+
 ---
 
 ## 👤 Hiring / HR → `#needs-review`
 
-Used for hiring, resumes, and HR-related emails.
+Used for resumes, job inquiries, and HR-related emails.
 
 **Format**
 👤 Hiring / HR
@@ -118,6 +127,8 @@ Subject: <subject>
 From: <from>
 
 Summary: <short body snippet>
+
+
 
 ---
 
@@ -133,6 +144,7 @@ From: <from>
 Summary: <short body snippet>
 
 
+
 **Notes**
 - Acts as the human-in-the-loop safety bucket
 - Confidence value may be omitted
@@ -143,7 +155,7 @@ Summary: <short body snippet>
 
 ### 🧾 Billing / Invoice
 - **Slack:** none  
-- **Handling:** forwarded or routed via email
+- **Handling:** forwarded or routed via email rules
 
 ### 🧹 Spam / Marketing
 - **Slack:** none  
