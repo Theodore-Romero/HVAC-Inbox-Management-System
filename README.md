@@ -9,12 +9,6 @@ An automated inbox intelligence system that classifies, extracts, and routes HVA
 
 ---
 
-## 🖼️ Workflow Preview
-
-![n8n Workflow Overview](<img width="899" height="713" alt="hvac-n8n-workflow" src="https://github.com/user-attachments/assets/90c45b8c-b296-4154-85f6-f257033d66a1" />
-)
-
----
 
 ## 📊 Overview
 
