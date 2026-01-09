@@ -33,8 +33,11 @@ Emergency messages bypass all confidence checks and send immediately.
 🚨 EMERGENCY
 
 Subject: "subject line"
+
 From: "sender"
+
 Details: "summarized body message"
+
 
 **Notes**
 - Always delivered to `#dispatch-emergency`
@@ -50,8 +53,11 @@ Used for new business inquiries and estimate requests.
 🆕 New Lead / Estimate 
 
 Subject: "subject line"
+
 From: "sender"
+
 Details: "summarized body message"
+
 
 ---
 
@@ -61,11 +67,12 @@ Used for standard HVAC service or repair requests.
 
 **Format**
 🔧 Service Request 
-Subject: <subject>
-From: <from>
 
-Summary: <short body snippet>
+Subject: "subject line"
 
+From: "sender"
+
+Details: "summarized body message"
 
 ---
 
@@ -77,7 +84,9 @@ Used for schedule changes, confirmations, or dispatch coordination.
 📆 Scheduling / Dispatch Update
 
 Subject: "subject line"
+
 From: "sender"
+
 Details: "summarized body message"
 
 ---
@@ -90,7 +99,9 @@ Used for maintenance plans and membership-related requests.
 🛠️ Maintenance / Membership
 
 Subject: "subject line"
+
 From: "sender"
+
 Details: "summarized body message"
 
 ---
@@ -103,7 +114,9 @@ Used for vendor, supply house, or partner communications.
 🤝 Vendor / Partner
 
 Subject: "subject line"
+
 From: "sender"
+
 Details: "summarized body message"
 
 ---
@@ -116,7 +129,9 @@ Used for resumes, job inquiries, and HR-related emails.
 👤 Hiring / HR
 
 Subject: "subject line"
+
 From: "sender"
+
 Details: "summarized body message"
 
 
@@ -130,7 +145,9 @@ Used when classification confidence is low or signals conflict.
 ❓ Needs Review (confidence: <confidence>)
 
 Subject: "subject line"
+
 From: "sender"
+
 Details: "summarized body message"
 
 
