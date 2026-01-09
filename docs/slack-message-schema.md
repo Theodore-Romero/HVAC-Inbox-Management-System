@@ -36,8 +36,6 @@ From: <from>
 
 Details: <truncated email body>
 
-yaml
-Copy code
 
 **Notes**
 - Always delivered to `#dispatch-emergency`
@@ -56,8 +54,6 @@ From: <from>
 
 Summary: <short body snippet>
 
-yaml
-Copy code
 
 ---
 
@@ -72,10 +68,6 @@ From: <from>
 
 Summary: <short body snippet>
 
-yaml
-Copy code
-
----
 
 ## 📆 Scheduling / Dispatch Update → `#service-request`
 
@@ -89,9 +81,6 @@ Thread: <thread_id>
 
 Summary: <short body snippet>
 
-yaml
-Copy code
-
 ---
 
 ## 🛠️ Maintenance / Membership → `#maintenance-request`
@@ -103,9 +92,6 @@ Used for maintenance plans and membership-related requests.
 Subject: <subject>
 From: <from>
 Thread: <thread_id>
-
-yaml
-Copy code
 
 ---
 
@@ -120,9 +106,6 @@ From: <from>
 
 Summary: <short body snippet>
 
-yaml
-Copy code
-
 ---
 
 ## 👤 Hiring / HR → `#needs-review`
@@ -135,9 +118,6 @@ Subject: <subject>
 From: <from>
 
 Summary: <short body snippet>
-
-pgsql
-Copy code
 
 ---
 
@@ -152,8 +132,6 @@ From: <from>
 
 Summary: <short body snippet>
 
-markdown
-Copy code
 
 **Notes**
 - Acts as the human-in-the-loop safety bucket
