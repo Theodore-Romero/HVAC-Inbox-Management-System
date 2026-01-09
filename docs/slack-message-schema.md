@@ -31,12 +31,10 @@ Emergency messages bypass all confidence checks and send immediately.
 
 **Format**
 🚨 EMERGENCY
-Subject: <subject>
-From: <from>
 
-Details: <truncated email body>
-
-
+Subject: "subject line"
+From: "sender"
+Details: "summarized body message"
 
 **Notes**
 - Always delivered to `#dispatch-emergency`
@@ -49,13 +47,11 @@ Details: <truncated email body>
 Used for new business inquiries and estimate requests.
 
 **Format**
-🆕 New Lead / Estimate (urgency)
-Subject: <subject>
-From: <from>
+🆕 New Lead / Estimate 
 
-Summary: <short body snippet>
-
-
+Subject: "subject line"
+From: "sender"
+Details: "summarized body message"
 
 ---
 
@@ -64,7 +60,7 @@ Summary: <short body snippet>
 Used for standard HVAC service or repair requests.
 
 **Format**
-🔧 Service Request (urgency)
+🔧 Service Request 
 Subject: <subject>
 From: <from>
 
@@ -79,13 +75,10 @@ Used for schedule changes, confirmations, or dispatch coordination.
 
 **Format**
 📆 Scheduling / Dispatch Update
-Subject: <subject>
-From: <from>
-Thread: <thread_id>
 
-Summary: <short body snippet>
-
-
+Subject: "subject line"
+From: "sender"
+Details: "summarized body message"
 
 ---
 
@@ -95,11 +88,10 @@ Used for maintenance plans and membership-related requests.
 
 **Format**
 🛠️ Maintenance / Membership
-Subject: <subject>
-From: <from>
-Thread: <thread_id>
 
-
+Subject: "subject line"
+From: "sender"
+Details: "summarized body message"
 
 ---
 
@@ -109,11 +101,10 @@ Used for vendor, supply house, or partner communications.
 
 **Format**
 🤝 Vendor / Partner
-Subject: <subject>
-From: <from>
 
-Summary: <short body snippet>
-
+Subject: "subject line"
+From: "sender"
+Details: "summarized body message"
 
 ---
 
@@ -123,11 +114,10 @@ Used for resumes, job inquiries, and HR-related emails.
 
 **Format**
 👤 Hiring / HR
-Subject: <subject>
-From: <from>
 
-Summary: <short body snippet>
-
+Subject: "subject line"
+From: "sender"
+Details: "summarized body message"
 
 
 ---
@@ -138,11 +128,10 @@ Used when classification confidence is low or signals conflict.
 
 **Format**
 ❓ Needs Review (confidence: <confidence>)
-Subject: <subject>
-From: <from>
 
-Summary: <short body snippet>
-
+Subject: "subject line"
+From: "sender"
+Details: "summarized body message"
 
 
 **Notes**
